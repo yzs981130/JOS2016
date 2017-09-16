@@ -218,7 +218,7 @@ git-handin: handin-check
 		false; \
 	fi
 
-WEBSUB := https://6828.scripts.mit.edu/2016/handin.py
+WEBSUB := https://6828.scripts.mit.edu/2017/handin.py
 
 handin: tarball-pref myapi.key
 	@SUF=$(LAB); \
@@ -307,7 +307,7 @@ warn:
 	echo "this is the 2016 6.828 lab"; \
 	echo "******* WARNING ********* [39m"; \
 	echo; \
-	false;
+	#false;
 
 #handin-prep:
 #	@./handin-prep
