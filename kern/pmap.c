@@ -481,23 +481,13 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
-	pte_t *pte = pgdir_walk(pgdir, va, 0);
-	if(pte){
-		if(*pte & PTE_P){
-			if(PTE_ADDR(*pte) == page2pa(pp)){
-				*pte = page2pa(pp) | perm | PTE_P;
-				return 0;
-			}
-			page_remove(pgdir, va);
-		}
-	}
-	else{
-		pte = pgdir_walk(pgdir, va, 1);
-		if(!pte)
-			return -E_NO_MEM;
-	}
+	pte_t *pte = pgdir_walk(pgdir, va, 1);
+	if(!pte)
+		return -E_NO_MEM;
+	pp->pp_ref++;	
+	if(*pte & PTE_P)
+		page_remove(pgdir, va);
 	*pte = page2pa(pp) | perm | PTE_P;
-	pp->pp_ref++;
 	return 0;
 }
 
