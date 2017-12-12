@@ -25,6 +25,8 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+    	if (!(err & FEC_WR) || !(uvpt[PGNUM(addr)] & PTE_COW))
+        	panic("pgfault: Not copy-on-write!\n");
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -33,8 +35,14 @@ pgfault(struct UTrapframe *utf)
 	//   You should make three system calls.
 
 	// LAB 4: Your code here.
-
-	panic("pgfault not implemented");
+    	addr = ROUNDDOWN(addr, PGSIZE);
+    	if((r = sys_page_alloc(0, (void*)PFTEMP, PTE_U | PTE_W | PTE_P)) < 0)
+		panic("pgfault: COW alloc error!\n");
+    	memcpy((void*)PFTEMP, addr, PGSIZE);
+	if((r = sys_page_map(0, (void*)PFTEMP, 0, addr, PTE_U | PTE_W | PTE_P)) < 0)
+		panic("pgfault: COW page map error!\n");
+	if((r = sys_page_unmap(0, (void*)PFTEMP)) < 0)
+		panic("pgfault: COW page unmap error!\n");
 }
 
 //
@@ -54,7 +62,19 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+	void *va = (void*)(pn * PGSIZE);
+	int perm = uvpt[pn] & PTE_SYSCALL;
+	if (perm & (PTE_W | PTE_COW))
+	{
+		perm &= ~PTE_W;
+		perm |= PTE_COW;
+	}
+	else
+		panic("duppage: COW not writable");
+	if ((r = sys_page_map(0, va, envid, va, perm)) < 0) 
+		panic("duppage: COW page map error!\n");
+	if ((r = sys_page_map(0, va, 0, va, perm)) < 0) 
+		panic("duppage: COW 2nd page map error!\n");
 	return 0;
 }
 
@@ -78,7 +98,27 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	int ret;
+	set_pgfault_handler(pgfault);
+	envid_t envid = sys_exofork();
+	if (envid < 0) 
+		panic("fork: sys_exofork fail!\n");
+	if (envid == 0)
+	{
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+	for (uint32_t va = 0; va < USTACKTOP; va += PGSIZE)
+		if ((uvpd[PDX(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_P))
+			duppage(envid, PGNUM(va));
+	
+	if ((ret = sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P)) < 0) 
+		panic("fork: page alloc fail!\n");
+	extern void _pgfault_upcall(void);
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+	if ((ret = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) 
+		panic("fork: env set status fail!\n");
+	return envid;
 }
 
 // Challenge!

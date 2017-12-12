@@ -42,83 +42,59 @@
 	pushl $(num);							\
 	jmp _alltraps
 
+.text
 
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
-
-#define ec(name, num)\
-.data;				\
-	.long name;				\
-.text;\
-	.globl name;				\
-	.type name, @function;				\
-	.align 2;				\
-name:				\
-	pushl $(num);				\
-	jmp _alltraps
-
-#define noec(name, num)				\
-.data;				\
-	.long name;				\
-.text;				\
-	.globl name;				\
-	.type name, @function;				\
-	.align 2;				\
-name:				\
-	pushl $0;				\
-	pushl $(num);				\
-	jmp _alltraps
-
-#define padding()				\
-.data;				\
-	.long 0
-
-.data
-	.p2align 2
-	.globl funs
+TRAPHANDLER_NOEC(t_divide, T_DIVIDE)
+TRAPHANDLER_NOEC(t_debug, T_DEBUG)
+TRAPHANDLER_NOEC(t_nmi, T_NMI)
+TRAPHANDLER_NOEC(t_brkpt, T_BRKPT)
+TRAPHANDLER_NOEC(t_oflow, T_OFLOW)
+TRAPHANDLER_NOEC(t_bound, T_BOUND)
+TRAPHANDLER_NOEC(t_illop, T_ILLOP)
+TRAPHANDLER_NOEC(t_device, T_DEVICE)
+TRAPHANDLER(t_dblflt, T_DBLFLT)
+TRAPHANDLER(t_tss, T_TSS)
+TRAPHANDLER(t_segnp, T_SEGNP)
+TRAPHANDLER(t_stack, T_STACK)
+TRAPHANDLER(t_gpflt, T_GPFLT)
+TRAPHANDLER(t_pgflt, T_PGFLT)
+TRAPHANDLER_NOEC(t_fperr, T_FPERR)
+TRAPHANDLER(t_align, T_ALIGN)
+TRAPHANDLER_NOEC(t_mchk, T_MCHK)
+TRAPHANDLER_NOEC(t_simderr, T_SIMDERR)
+TRAPHANDLER_NOEC(t_syscall, T_SYSCALL)
 
 
-
-funs:
-.text
-	noec(th0, 0)
-	noec(th1, 1)
-	noec(th2, 2)
-	noec(th3, 3)
-	noec(th4, 4)
-	noec(th5, 5)
-	noec(th6, 6)
-	noec(th7, 7)
-	ec(th8, 8)
-	padding()
-	ec(th10, 10)
-	ec(th11, 11)
-	ec(th12, 12)
-	ec(th13, 13)
-	ec(th14, 14)
-	padding()
-	noec(th16, 16)
-	noec(th17, 17)
-	noec(th18, 18)
-	noec(th19, 19)
-.data
-	.space 112
-.text
-	noec(th48, 48)
+TRAPHANDLER_NOEC(t_irq0, IRQ_OFFSET + 0)
+TRAPHANDLER_NOEC(t_irq1, IRQ_OFFSET + 1)
+TRAPHANDLER_NOEC(t_irq2, IRQ_OFFSET + 2)
+TRAPHANDLER_NOEC(t_irq3, IRQ_OFFSET + 3)
+TRAPHANDLER_NOEC(t_irq4, IRQ_OFFSET + 4)
+TRAPHANDLER_NOEC(t_irq5, IRQ_OFFSET + 5)
+TRAPHANDLER_NOEC(t_irq6, IRQ_OFFSET + 6)
+TRAPHANDLER_NOEC(t_irq7, IRQ_OFFSET + 7)
+TRAPHANDLER_NOEC(t_irq8, IRQ_OFFSET + 8)
+TRAPHANDLER_NOEC(t_irq9, IRQ_OFFSET + 9)
+TRAPHANDLER_NOEC(t_irq10, IRQ_OFFSET + 10)
+TRAPHANDLER_NOEC(t_irq11, IRQ_OFFSET + 11)
+TRAPHANDLER_NOEC(t_irq12, IRQ_OFFSET + 12)
+TRAPHANDLER_NOEC(t_irq13, IRQ_OFFSET + 13)
+TRAPHANDLER_NOEC(t_irq14, IRQ_OFFSET + 14)
+TRAPHANDLER_NOEC(t_irq15, IRQ_OFFSET + 15)
 
 
 /*
  * Lab 3: Your code here for _alltraps
  */
-
-
 _alltraps:
 	pushl %ds
 	pushl %es
 	pushal
 	movl $GD_KD, %eax
-	movl %eax, %ds
-	movl %eax, %es
-	pushl %esp
+	movw %ax, %ds
+	movw %ax, %es
+	push %esp
 	call trap
