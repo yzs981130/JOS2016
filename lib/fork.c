@@ -64,16 +64,20 @@ duppage(envid_t envid, unsigned pn)
 	// LAB 4: Your code here.
 	void *va = (void*)(pn * PGSIZE);
 	int perm = uvpt[pn] & PTE_SYSCALL;
-	if (perm & (PTE_W | PTE_COW))
-	{
+	if(perm & PTE_SHARE){
+		if((r = sys_page_map(0, va, envid, va, perm)) < 0)
+			panic("duppage: share pte map error!\n");
+		return 0;
+	}
+	if(perm & (PTE_W | PTE_COW)){
 		perm &= ~PTE_W;
 		perm |= PTE_COW;
 	}
-	else
-		panic("duppage: COW not writable");
-	if ((r = sys_page_map(0, va, envid, va, perm)) < 0) 
+	//else
+		//panic("duppage: COW not writable");
+	if((r = sys_page_map(0, va, envid, va, perm)) < 0) 
 		panic("duppage: COW page map error!\n");
-	if ((r = sys_page_map(0, va, 0, va, perm)) < 0) 
+	if((r = sys_page_map(0, va, 0, va, perm)) < 0) 
 		panic("duppage: COW 2nd page map error!\n");
 	return 0;
 }

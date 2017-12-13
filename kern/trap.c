@@ -283,7 +283,6 @@ trap_dispatch(struct Trapframe *tf)
 		cprintf("Spurious interrupt on irq 7\n");
 		print_trapframe(tf);
 		return;
-	}
 
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
@@ -293,14 +292,12 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 5: Your code here.
 
 	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
-	}
-		break;
+    case IRQ_OFFSET + IRQ_KBD:
+	kbd_intr();
+	break;
+    case IRQ_OFFSET + IRQ_SERIAL:
+	serial_intr();
+	break;
 
     default:
 	    // Unexpected trap: The user process or the kernel has a bug.
